@@ -466,34 +466,34 @@ client
     })
 // 🌟 优化后的：监听 实时订单提醒
 client
-  .channel('realtime-food-and-poke') // 频道名字建议与前面发射端保持一致
+  .channel('realtime-food-and-poke') 
   .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chuo_records' }, payload => {
     
     console.log("云端雷达收到新信号:", payload.new);
     
     const type = payload.new.type;
-    const foods = payload.new.foods; // 这里拿到的直接是字符串，比如 "红烧鸡翅、炒土豆丝" 或 "下馆子"
+    // ✨【核心修改】：强制洗掉可能存在的 [ ] " 等符号，确保 foods 是纯文字
+    const foods = payload.new.foods ? String(payload.new.foods).replace(/[\[\]"]/g, '') : '';
 
     // 1. 如果检测到是“点菜”信号，且里面有菜品内容
     if (type === 'order' && foods) {
         let alertText = "";
         
-        // 纯字符串判断，直接用 .indexOf() 或者 .includes() 都可以
+        // 现在的 foods 已经是干净的 "下馆子" 了，下面这个判断就能完美拦截到了！
         if (foods.includes("下馆子")) {
             alertText = `📢 【重大通知】\n今天不想做饭啦！\n宝贝决定翻牌【出门下馆子】🚗✨\n请粥粥立刻换好衣服，准备出发！冲鸭！`;
         } else {
-            // 因为 foods 已经是字符串了，直接放进 ${foods} 即可，不需要再写 .join('、') 啦！
             alertText = `🔔 【食堂新订单】\n你的宝贝下单啦！\n今晚翻牌子的菜单是：\n👉 【${foods}】\n请粥粥立刻前往厨房准备。😘`;
         }
         
         // 弹出实时通知
         alert(alertText);
-        startHeartRain(); // 既然点菜了，顺便给接收方也来一场浪漫的爱心雨！
+        startHeartRain(); 
     } 
     
     // 2. 如果收到的是纯“戳一戳”信号
     else if (type === 'poke') {
-        startHeartRain(); // 接收方响应爱心雨
+        startHeartRain(); 
     }
   })
   .subscribe();
