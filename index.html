@@ -436,31 +436,9 @@ async function sendPoke() {
     }
 }
 
-// ✨【新增：核心动效函数】把爱心雨单独封装出来，供下面联合监听调用
 function startHeartRain() {
-    for (let i = 0; i < 60; i++) {
-        setTimeout(() => {
-            const heart = document.createElement('div');
-            heart.innerText = ['💖', '❤️', '✨', '🔥', '🍕'][Math.floor(Math.random() * 5)];
-            heart.style.position = 'fixed';
-            heart.style.left = Math.random() * 100 + 'vw';
-            heart.style.top = '-50px';
-            heart.style.fontSize = Math.random() * 20 + 20 + 'px';
-            heart.style.zIndex = '9999';
-            heart.style.transition = 'transform 3s linear, opacity 3s linear';
-            
-            document.body.appendChild(heart);
-            
-            setTimeout(() => {
-                heart.style.transform = `translateY(110vh) rotate(${Math.random() * 360}deg)`;
-                heart.style.opacity = '0';
-            }, 50);
-            
-            setTimeout(() => heart.remove(), 3050);
-        }, i * 100);
-    }
+    alert("爱心雨被调用了！");
 }
-
 // 4. 【接收端联合监听】合并为一个核心接收道，再也不会冲突了！
 client
   .channel('realtime-universal-channel') 
