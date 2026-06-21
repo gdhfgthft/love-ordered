@@ -439,31 +439,30 @@ async function sendPoke() {
 function startHeartRain() {
     alert("爱心雨被调用了！");
 }
-// 4. 【接收端联合监听】合并为一个核心接收道，再也不会冲突了！
+const channelName = 'realtime-universal-channel';
+
 client
-  .channel('realtime-universal-channel') 
-  .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chuo_records' }, payload => {
-    
+  .channel(channelName)
+  .on('postgres_changes', {
+    event: 'INSERT',
+    schema: 'public',
+    table: 'chuo_records'
+  }, payload => {
     console.log("云端雷达收到新信号:", payload.new);
-    
+
     const type = payload.new.type;
     const rawFoods = payload.new.foods;
     const foods = rawFoods ? String(rawFoods).replace(/[\[\]"]/g, '') : '';
 
-    // 动作 1：如果是“点菜”信号
     if (type === 'order' && foods) {
-        let alertText = "";
-        if (foods.includes("下馆子")) {
-            alertText = `📢 【重大通知】\n今天不想做饭啦！\n宝贝决定翻牌【出门下馆子】🚗✨\n请粥粥立刻换好衣服，准备出发！冲鸭！`;
-        } else {
-            alertText = `🔔 【食堂新订单】\n你的宝贝下单啦！\n今晚翻牌子的菜单是：\n👉 【${foods}】\n请粥粥立刻前往厨房准备。😘`;
-        }
-        alert(alertText);
-        startHeartRain(); // 完美调用上面的爱心雨函数！
-    } 
-    // 动作 2：如果是纯“戳一戳”信号
-    else if (type === 'poke' || !type) {
-        startHeartRain(); // 完美调用上面的爱心雨函数！
+      let alertText = foods.includes("下馆子")
+        ? `📢 今天出门吃饭！🚗✨`
+        : `🔔 菜单：${foods}`;
+
+      alert(alertText);
+      startHeartRain();
+    } else {
+      startHeartRain();
     }
   })
   .subscribe();
