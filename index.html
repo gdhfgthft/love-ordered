@@ -371,71 +371,13 @@ body {
 </div>
 
 <script>
-// 1. 初始化 Supabase 实例
-const SUPABASE_URL = "https://rdaadekuspexkbcfploh.supabase.co";
-const SUPABASE_KEY = "sb_publishable_59Dd4UwnmmbaOa8s4EYL1w_hfl3VHYI";
-const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// 1. 初始化 Supabase
+const client = supabase.createClient(
+    "https://rdaadekuspexkbcfploh.supabase.co", 
+    "sb_publishable_59Dd4UwnmmbaOa8s4EYL1w_hfl3VHYI"
+);
 
-// 2. 【发送端】点击一键召唤 —— 同样写入 chuo_records 表！
-async function order() {
-    let checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
-    if(checkboxes.length === 0) {
-        alert('宝子，你还没点菜呢！别饿着了~');
-        return;
-    }
-    
-    let foods = [];
-    checkboxes.forEach(box => foods.push(box.value));
-    
-    const orderBtn = document.querySelector('.btn');
-    const originalText = orderBtn.innerText;
-    orderBtn.innerText = "🚀 正在秘密传送菜单...";
-    orderBtn.disabled = true;
-
-    // 重点：因为你只有 chuo_records 表，我们把菜品数据塞进 foods 字段（确保你表里有这个字段，或者直接塞进一个自定义字段）
-    // 如果你的表只有默认的 id 和 created_at，建议在 Supabase 里给 chuo_records 表加一个叫 foods 的 text 或 json 字段
-    const { error } = await client
-        .from('chuo_records')
-        .insert([{ foods: foods, type: 'order' }]); // 用 type='order' 区分
-
-    if (error) {
-        console.error("【订单发送失败】", error);
-        alert(`召唤失败啦，原因: ${error.message}`);
-        orderBtn.innerText = originalText;
-        orderBtn.disabled = false;
-    } else {
-        orderBtn.innerText = "✨ 召唤成功！他收到啦！ ✨";
-        setTimeout(() => {
-            orderBtn.innerText = originalText;
-            orderBtn.disabled = false;
-        }, 2000);
-    }
-}
-
-// 3. 【发送端】点击按钮“戳一戳” （这段保持不变，写的很好！）
-async function sendPoke() {
-    const btn = document.getElementById('chuoBtn');
-    btn.innerText = "🚀 正在发射暴击...";
-    btn.disabled = true;
-
-    const { error } = await client
-        .from('chuo_records')
-        .insert([{ type: 'poke' }]); 
-
-    if (error) {
-        console.error("【发送失败日志】", error);
-        alert(`发射失败，原因: ${error.message}`);
-        btn.innerText = "💖 隔空戳一戳男朋友";
-        btn.disabled = false;
-    } else {
-        btn.innerText = "✅ 戳成功啦！";
-        setTimeout(() => {
-            btn.innerText = "💖 隔空戳一戳男朋友";
-            btn.disabled = false;
-        }, 1500);
-    }
-}
-
+// 2. 爱心雨函数（加了防遮挡点击设置）
 function startHeartRain() {
     for (let i = 0; i < 60; i++) {
         setTimeout(() => {
@@ -446,7 +388,7 @@ function startHeartRain() {
             heart.style.top = '-50px';
             heart.style.fontSize = Math.random() * 20 + 20 + 'px';
             heart.style.zIndex = '9999';
-            heart.style.pointerEvents = 'none';
+            heart.style.pointerEvents = 'none'; // 防止遮挡页面点击
             heart.style.transition = 'transform 3s linear, opacity 3s linear';
 
             document.body.appendChild(heart);
@@ -461,13 +403,69 @@ function startHeartRain() {
     }
 }
 
+// 3. 【发射端】点击一键点菜
+async function order() {
+    let checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+    if(checkboxes.length === 0) {
+        alert('宝子，你还没点菜呢！别饿着了~');
+        return;
+    }
+    
+    let foodsArr = [];
+    checkboxes.forEach(box => foodsArr.push(box.value));
+    
+    const orderBtn = document.querySelector('.btn');
+    const originalText = orderBtn.innerText;
+    orderBtn.innerText = "🚀 正在秘密传送菜单...";
+    orderBtn.disabled = true;
+
+    // 拼成纯净的字符串，直接传过去
+    const cleanFoodsText = foodsArr.join('、');
+
+    const { error } = await client
+        .from('chuo_records')
+        .insert({ foods: cleanFoodsText, type: 'order' }); // ✨ 去掉外层中括号，直接传对象，确保不报错
+
+    if (error) {
+        alert(`召唤失败啦，原因: ${error.message}`);
+        orderBtn.innerText = originalText;
+        orderBtn.disabled = false;
+    } else {
+        orderBtn.innerText = "✨ 召唤成功！他收到啦！ ✨";
+        setTimeout(() => {
+            orderBtn.innerText = originalText;
+            orderBtn.disabled = false;
+        }, 2000);
+    }
+}
+
+// 4. 【发射端】点击按钮“戳一戳”
+async function sendPoke() {
+    const btn = document.getElementById('chuoBtn');
+    btn.innerText = "🚀 正在发射暴击...";
+    btn.disabled = true;
+
+    const { error } = await client
+        .from('chuo_records')
+        .insert({ type: 'poke', foods: '' }); // ✨ 去掉外层中括号，直接传规范对象
+
+    if (error) {
+        alert(`发射失败，原因: ${error.message}`);
+        btn.innerText = "💖 隔空戳一戳男朋友";
+        btn.disabled = false;
+    } else {
+        btn.innerText = "✅ 戳成功啦！";
+        setTimeout(() => {
+            btn.innerText = "💖 隔空戳一戳男朋友";
+            btn.disabled = false;
+        }, 1500);
+    }
+}
+
+// 5. 【接收端】全自动化统一雷达监听通道
 client
-  .channel(channelName)
-  .on('postgres_changes', {
-    event: 'INSERT',
-    schema: 'public',
-    table: 'chuo_records'
-  }, payload => {
+  .channel('realtime-universal-channel')
+  .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chuo_records' }, payload => {
     console.log("云端雷达收到新信号:", payload.new);
 
     const type = payload.new.type;
@@ -482,6 +480,7 @@ client
       alert(alertText);
       startHeartRain();
     } else {
+      // 只要不是 order（也就是戳一戳信号），直接下满屏暴雨！
       startHeartRain();
     }
   })
