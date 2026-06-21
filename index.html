@@ -371,7 +371,13 @@ body {
 </div>
 
 <script>
-function order() {
+// 1. 初始化 Supabase 实例
+const SUPABASE_URL = "https://rdaadekuspexkbcfploh.supabase.co";
+const SUPABASE_KEY = "sb_publishable_59Dd4UwnmmbaOa8s4EYL1w_hfl3VHYI";
+const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// 2. 【发送端】点击一键召唤 —— 同样写入 chuo_records 表！
+async function order() {
     let checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
     if(checkboxes.length === 0) {
         alert('宝子，你还没点菜呢！别饿着了~');
@@ -381,60 +387,32 @@ function order() {
     let foods = [];
     checkboxes.forEach(box => foods.push(box.value));
     
-    let text = "";
-    if (foods.includes("下馆子")) {
-        text = `📢 【重大通知】\n今天不想让粥粥做饭啦！\n我已经决定翻牌【出门下馆子】🚗✨\n请微信对面的粥粥立刻换好衣服，准备出发！冲鸭！`;
+    const orderBtn = document.querySelector('.btn');
+    const originalText = orderBtn.innerText;
+    orderBtn.innerText = "🚀 正在秘密传送菜单...";
+    orderBtn.disabled = true;
+
+    // 重点：因为你只有 chuo_records 表，我们把菜品数据塞进 foods 字段（确保你表里有这个字段，或者直接塞进一个自定义字段）
+    // 如果你的表只有默认的 id 和 created_at，建议在 Supabase 里给 chuo_records 表加一个叫 foods 的 text 或 json 字段
+    const { error } = await client
+        .from('chuo_records')
+        .insert([{ foods: foods, type: 'order' }]); // 用 type='order' 区分
+
+    if (error) {
+        console.error("【订单发送失败】", error);
+        alert(`召唤失败啦，原因: ${error.message}`);
+        orderBtn.innerText = originalText;
+        orderBtn.disabled = false;
     } else {
-        text = `你的宝贝下单啦！\n今晚翻牌子的菜单是：【${foods.join('、')}】\n请粥粥大人立刻前往厨房准备。😘`;
-    }
-    
-    // 使用现代剪贴板 API，如果失败则降级使用旧方法
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(() => {
-            alert('🎉 订单复制成功！快去微信粘贴发给男朋友吧！');
-        }).catch(err => {
-            fallbackCopy(text);
-        });
-    } else {
-        fallbackCopy(text);
+        orderBtn.innerText = "✨ 召唤成功！他收到啦！ ✨";
+        setTimeout(() => {
+            orderBtn.innerText = originalText;
+            orderBtn.disabled = false;
+        }, 2000);
     }
 }
 
-// 降级复制方案
-function fallbackCopy(text) {
-    let textArea = document.createElement("textarea");
-    textArea.value = text;
-    textArea.style.position = "fixed";
-    textArea.style.top = "0";
-    textArea.style.left = "0";
-    textArea.style.width = "2em";
-    textArea.style.height = "2em";
-    textArea.style.background = "transparent";
-    textArea.style.border = "none";
-    
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-
-    try {
-        let successful = document.execCommand('copy');
-        if (successful) {
-            alert('🎉 订单复制成功！快去微信粘贴发给男朋友吧！');
-        } else {
-            alert('复制好像失败了，可以直接截图发给他哟~');
-        }
-    } catch (err) {
-        alert('天呐，浏览器太严格了，手敲或截图发给他吧~');
-    }
-    document.body.removeChild(textArea);
-}
-
-// 1. 初始化 Supabase 实例
-const SUPABASE_URL = "https://rdaadekuspexkbcfploh.supabase.co";
-const SUPABASE_KEY = "sb_publishable_59Dd4UwnmmbaOa8s4EYL1w_hfl3VHYI";
-const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-// 2. 【发送端】点击按钮往云端发送记事
+// 3. 【发送端】点击按钮“戳一戳”
 async function sendPoke() {
     const btn = document.getElementById('chuoBtn');
     btn.innerText = "🚀 正在发射暴击...";
@@ -442,11 +420,11 @@ async function sendPoke() {
 
     const { error } = await client
         .from('chuo_records')
-        .insert([{}]); 
+        .insert([{ type: 'poke' }]); // 用 type='poke' 区分
 
     if (error) {
         console.error("【发送失败日志】", error);
-        alert(`发射失败，原因: ${error.message}\n请检查 RLS 策略或网络！`);
+        alert(`发射失败，原因: ${error.message}`);
         btn.innerText = "💖 隔空戳一戳男朋友";
         btn.disabled = false;
     } else {
@@ -458,12 +436,28 @@ async function sendPoke() {
     }
 }
 
-// 3. 【接收端】开启大喇叭（这里已修正为 client）
+// 4. 【接收端】合二为一！只监听 chuo_records 一个表
 client
     .channel('schema-db-changes')
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chuo_records' }, payload => {
         
-        // 🌟 核心彩蛋：下爱心雨
+        const type = payload.new.type;
+        const rawFoods = payload.new.foods;
+
+        // 情况 A：如果是点菜（或者是带菜品的数据）
+        if (type === 'order' || rawFoods) {
+            const foods = Array.isArray(rawFoods) ? rawFoods : [rawFoods];
+            let alertText = "";
+            if (foods.includes("下馆子")) {
+                alertText = `📢 【重大通知】\n今天不想做饭啦！\n宝贝决定翻牌【出门下馆子】🚗✨\n请粥粥立刻换好衣服，准备出发！冲鸭！`;
+            } else {
+                alertText = `🔔 【食堂新订单】\n你的宝贝下单啦！\n今晚翻牌子的菜单是：\n👉 【${foods.join('、')}】\n请粥粥立刻前往厨房准备。😘`;
+            }
+            alert(alertText);
+        } 
+        
+        // 情况 B：如果是纯戳一戳，或者不管是啥都想下场暴雨，那就下爱心雨！
+        // 核心修复：现在这个监听器后面加了 .subscribe()，它终于动起来了！
         for (let i = 0; i < 60; i++) {
             setTimeout(() => {
                 const heart = document.createElement('div');
@@ -477,40 +471,16 @@ client
                 
                 document.body.appendChild(heart);
                 
-                // 稍微延迟一点点确保 transition 生效
                 setTimeout(() => {
                     heart.style.transform = `translateY(110vh) rotate(${Math.random() * 360}deg)`;
                     heart.style.opacity = '0';
                 }, 50);
                 
-                // 自动销毁
                 setTimeout(() => heart.remove(), 3050);
             }, i * 100);
         }
-        
     })
-    // 🌟 优化后的：监听 实时订单提醒
-supabase
-  .channel('chuo_records') // 给频道起个名字
-  .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chuo_records' }, payload => {
-    
-    // 1. 确保 foods 永远是一个数组，防止报错
-    const rawFoods = payload.new.foods;
-    const foods = Array.isArray(rawFoods) ? rawFoods : [rawFoods];
-    
-    // 2. 准备弹窗文案
-    let alertText = "";
-    if (foods.includes("下馆子")) {
-        alertText = `📢 【重大通知】\n今天不想做饭啦！\n宝贝决定翻牌【出门下馆子】🚗✨\n请粥粥立刻换好衣服，准备出发！冲鸭！`;
-    } else {
-        alertText = `🔔 【食堂新订单】\n你的宝贝下单啦！\n今晚翻牌子的菜单是：\n👉 【${foods.join('、')}】\n请粥粥立刻前往厨房准备。😘`;
-    }
-    
-    // 3. 弹出实时通知
-    alert(alertText);
-  })
-  .subscribe();
-
+    .subscribe(); // ✨ 关键修复：之前就是漏了这句，导致根本没激活监听！
 
 </script>
 </body>
