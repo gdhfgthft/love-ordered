@@ -489,7 +489,28 @@ client
         }
         
     })
-    .subscribe();
+    // 🌟 优化后的：监听 实时订单提醒
+supabase
+  .channel('order_changes') // 给频道起个名字
+  .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chuo_records' }, payload => {
+    
+    // 1. 确保 foods 永远是一个数组，防止报错
+    const rawFoods = payload.new.foods;
+    const foods = Array.isArray(rawFoods) ? rawFoods : [rawFoods];
+    
+    // 2. 准备弹窗文案
+    let alertText = "";
+    if (foods.includes("下馆子")) {
+        alertText = `📢 【重大通知】\n今天不想做饭啦！\n宝贝决定翻牌【出门下馆子】🚗✨\n请粥粥立刻换好衣服，准备出发！冲鸭！`;
+    } else {
+        alertText = `🔔 【食堂新订单】\n你的宝贝下单啦！\n今晚翻牌子的菜单是：\n👉 【${foods.join('、')}】\n请粥粥立刻前往厨房准备。😘`;
+    }
+    
+    // 3. 弹出实时通知
+    alert(alertText);
+  })
+  .subscribe();
+
 
 </script>
 </body>
