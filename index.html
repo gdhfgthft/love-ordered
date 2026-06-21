@@ -437,9 +437,29 @@ async function sendPoke() {
 }
 
 function startHeartRain() {
-    alert("爱心雨被调用了！");
+    for (let i = 0; i < 60; i++) {
+        setTimeout(() => {
+            const heart = document.createElement('div');
+            heart.innerText = ['💖', '❤️', '✨', '🔥', '🍕'][Math.floor(Math.random() * 5)];
+            heart.style.position = 'fixed';
+            heart.style.left = Math.random() * 100 + 'vw';
+            heart.style.top = '-50px';
+            heart.style.fontSize = Math.random() * 20 + 20 + 'px';
+            heart.style.zIndex = '9999';
+            heart.style.pointerEvents = 'none';
+            heart.style.transition = 'transform 3s linear, opacity 3s linear';
+
+            document.body.appendChild(heart);
+
+            setTimeout(() => {
+                heart.style.transform = `translateY(110vh) rotate(${Math.random() * 360}deg)`;
+                heart.style.opacity = '0';
+            }, 50);
+
+            setTimeout(() => heart.remove(), 3200);
+        }, i * 100);
+    }
 }
-const channelName = 'realtime-universal-channel';
 
 client
   .channel(channelName)
