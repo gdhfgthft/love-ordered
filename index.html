@@ -491,7 +491,7 @@ client
     })
     // 🌟 优化后的：监听 实时订单提醒
 supabase
-  .channel('order_changes') // 给频道起个名字
+  .channel('chuo_records') // 给频道起个名字
   .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chuo_records' }, payload => {
     
     // 1. 确保 foods 永远是一个数组，防止报错
