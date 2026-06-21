@@ -377,7 +377,7 @@ const client = supabase.createClient(
     "sb_publishable_59Dd4UwnmmbaOa8s4EYL1w_hfl3VHYI"
 );
 
-// 2. 爱心雨函数（加了防遮挡点击设置）
+// 2. 爱心雨函数
 function startHeartRain() {
     for (let i = 0; i < 60; i++) {
         setTimeout(() => {
@@ -388,7 +388,7 @@ function startHeartRain() {
             heart.style.top = '-50px';
             heart.style.fontSize = Math.random() * 20 + 20 + 'px';
             heart.style.zIndex = '9999';
-            heart.style.pointerEvents = 'none'; // 防止遮挡页面点击
+            heart.style.pointerEvents = 'none'; 
             heart.style.transition = 'transform 3s linear, opacity 3s linear';
 
             document.body.appendChild(heart);
@@ -419,12 +419,11 @@ async function order() {
     orderBtn.innerText = "🚀 正在秘密传送菜单...";
     orderBtn.disabled = true;
 
-    // 拼成纯净的字符串，直接传过去
     const cleanFoodsText = foodsArr.join('、');
 
     const { error } = await client
         .from('chuo_records')
-        .insert({ foods: cleanFoodsText, type: 'order' }); // ✨ 去掉外层中括号，直接传对象，确保不报错
+        .insert({ foods: cleanFoodsText, type: 'order' }); 
 
     if (error) {
         alert(`召唤失败啦，原因: ${error.message}`);
@@ -447,7 +446,7 @@ async function sendPoke() {
 
     const { error } = await client
         .from('chuo_records')
-        .insert({ type: 'poke', foods: '' }); // ✨ 去掉外层中括号，直接传规范对象
+        .insert({ type: 'poke', foods: '' }); 
 
     if (error) {
         alert(`发射失败，原因: ${error.message}`);
@@ -462,7 +461,7 @@ async function sendPoke() {
     }
 }
 
-// 5. 【接收端】全自动化统一雷达监听通道
+// 5. 【接收端】全自动化统一雷达监听通道（移除了未定义的 channelName 变量）
 client
   .channel('realtime-universal-channel')
   .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chuo_records' }, payload => {
@@ -480,12 +479,10 @@ client
       alert(alertText);
       startHeartRain();
     } else {
-      // 只要不是 order（也就是戳一戳信号），直接下满屏暴雨！
       startHeartRain();
     }
   })
   .subscribe();
-
 
 </script>
 </body>
